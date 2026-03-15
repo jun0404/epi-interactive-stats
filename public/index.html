@@ -242,8 +242,8 @@ function hlIdsFor(key,S){
   const m={pointPrev:S.withFU,ci:S.inc,ir:S.inc,ciExp:S.incExp,ciUnexp:S.incUnexp,irExp:S.incExp,irUnexp:S.incUnexp};
   return(m[key]||S.inc).map(p=>p.id);
 }
-function bN(pats,fn){return pats.map(p=>fn(p)?'\\textcolor{3ddc84}{1}':'\\textcolor{5c6078}{0}').join('+')}
-function bD(pats,fn){return pats.map(p=>'\\textcolor{9498aa}{'+fn(p)+'}').join('+')}
+function bN(pats,fn){return pats.map(p=>fn(p)?'\\textcolor{#3ddc84}{1}':'\\textcolor{#5c6078}{0}').join('+')}
+function bD(pats,fn){return pats.map(p=>'\\textcolor{#9498aa}{'+fn(p)+'}').join('+')}
 
 // ====== TIMELINE POSITION HELPER ======
 function tlLeft(day){return`calc(${TL}px + (100% - ${TL+TR}px) * ${day/maxDay})`;}
@@ -343,7 +343,7 @@ function render(){
   const hIds=highlightedStat?hlIdsFor(highlightedStat,S):[];
 
   renderLeftPanel(S,hIds);
-  renderRightPanel(S);
+  try{renderRightPanel(S);}catch(e){console.error('Right panel render error:',e);}
   bindLeftEvents();
 }
 
