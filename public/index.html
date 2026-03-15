@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Interactive Epidemiological Statistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.js"></script>
+<style>
+:root{
+  --bg:#0c0e14;--surface:#141722;--surface2:#1a1e2e;--surface3:#1f2438;
+  --text:#e0e2ec;--text2:#9498aa;--text3:#5c6078;
+  --accent:#6c8cff;--accent-bg:rgba(108,140,255,0.08);
+  --green:#3ddc84;--green-bg:rgba(61,220,132,0.10);
+  --red:#ff6b6b;--red-bg:rgba(255,107,107,0.10);
+  --amber:#ffb347;--amber-bg:rgba(255,179,71,0.10);
+  --purple:#b08cff;--purple-bg:rgba(176,140,255,0.08);
+  --cyan:#4dd9e0;--cyan-bg:rgba(77,217,224,0.08);
+  --orange:#ff8c42;--orange-bg:rgba(255,140,66,0.10);
+  --border:#232840;--border2:#2a3050;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;--display:'Fraunces',serif;
+  --radius:10px;--radius-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;min-height:100vh}
+body.dragging-active{cursor:grabbing!important}
+body.dragging-active *{cursor:grabbing!important}
+
+.app-header{text-align:center;padding:1.8rem 1.5rem 1.4rem;border-bottom:1px solid var(--border);max-width:1800px;margin:0 auto}
+.app-header h1{font-family:var(--display);font-size:2rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+.app-header p{font-size:0.9rem;color:var(--text3);max-width:760px;margin:0 auto}
+
+.layout{display:flex;flex-direction:row;max-width:1800px;margin:0 auto;min-height:calc(100vh - 120px)}
+
+.panel-left{
+  width:50%;max-width:700px;min-width:420px;
+  border-right:1px solid var(--border);
+  padding:1.2rem 1.4rem 2rem;
+  overflow-y:auto;height:calc(100vh - 120px);
+  position:sticky;top:0;flex-shrink:0;
+}
+.panel-left::-webkit-scrollbar{width:5px}
+.panel-left::-webkit-scrollbar-track{background:var(--bg)}
+.panel-left::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.panel-right{
+  flex:1;min-width:0;
+  padding:1.2rem 1.4rem 3rem;
+  overflow-y:auto;height:calc(100vh - 120px);
+}
+.panel-right::-webkit-scrollbar{width:5px}
+.panel-right::-webkit-scrollbar-track{background:var(--bg)}
+.panel-right::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:1100px){
+  .layout{flex-direction:column}
+  .panel-left{width:100%;max-width:none;min-width:0;border-right:none;border-bottom:1px solid var(--border);height:auto;position:static;overflow-y:visible;padding-bottom:1.5rem}
+  .panel-right{height:auto;overflow-y:visible}
+}
+@media(max-width:520px){
+  .panel-left,.panel-right{padding:0.8rem 0.8rem 1.5rem}
+  .app-header{padding:1.2rem 0.8rem 1rem}
+  .app-header h1{font-size:1.5rem}
+}
+
+.section{margin-bottom:2rem}
+.section-title{font-family:var(--display);font-size:1.15rem;font-weight:600;color:var(--text2);margin-bottom:0.8rem;display:flex;align-items:center;gap:0.5rem}
+.section-title .dot{width:9px;height:9px;border-radius:50%}
+
+.patients-grid{display:flex;flex-direction:column;gap:0.55rem}
+.patient-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.85rem 1rem;position:relative;transition:border-color 0.2s,background 0.2s,opacity 0.2s}
+.patient-card:hover{border-color:var(--border2);background:var(--surface2)}
+.patient-card.excluded{opacity:0.38}
+.patient-card.highlighted{border-color:var(--accent);background:var(--accent-bg)}
+.patient-top{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;flex-wrap:wrap}
+.patient-name{font-weight:700;font-size:1rem;min-width:100px}
+.tags-row{display:flex;gap:0.3rem;flex-wrap:wrap}
+.patient-tag{display:inline-block;font-size:0.68rem;font-weight:600;padding:0.12rem 0.5rem;border-radius:4px;text-transform:uppercase;letter-spacing:0.04em}
+.tag-incident{background:var(--green-bg);color:var(--green)}
+.tag-prevalent{background:var(--red-bg);color:var(--red)}
+.tag-censored{background:var(--amber-bg);color:var(--amber)}
+.tag-excluded{background:rgba(92,96,120,0.2);color:var(--text3)}
+.tag-ambiguous{background:var(--orange-bg);color:var(--orange)}
+.tag-exposed{background:var(--purple-bg);color:var(--purple)}
+.tag-unexposed{background:var(--cyan-bg);color:var(--cyan)}
+.tag-baseline{background:rgba(61,220,132,0.06);color:#2a9e5e;font-size:0.6rem}
+
+.timeline-row{position:relative;height:46px;margin:0.35rem 0;user-select:none;-webkit-user-select:none}
+.tl-bg{position:absolute;top:50%;left:65px;right:12px;height:2px;background:var(--border);transform:translateY(-50%)}
+.tl-seg{position:absolute;top:50%;height:5px;border-radius:2px;transform:translateY(-50%);transition:none}
+.tl-seg.green{background:var(--green);opacity:0.65}
+.tl-seg.red{background:var(--red);opacity:0.65}
+.tl-seg.amber{background:var(--amber);opacity:0.55}
+.tl-seg.orange{background:var(--orange);opacity:0.55}
+.tl-seg.dashed{border-top:2px dashed var(--text3);height:0;opacity:0.25}
+.tl-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2.5px solid;z-index:2;transition:none}
+.tl-label{position:absolute;font-size:0.7rem;font-weight:600;color:var(--text2);transform:translateX(-50%);white-space:nowrap;transition:none}
+.tl-cutoff{position:absolute;top:-6px;bottom:-6px;width:0;border-left:2px dashed var(--accent);opacity:0.35}
+.tl-cutoff-tag{position:absolute;top:-19px;font-size:0.58rem;font-weight:600;color:var(--accent);transform:translateX(-50%);white-space:nowrap;opacity:0.6}
+.tl-day0{position:absolute;top:50%;left:0;transform:translateY(-50%);font-size:0.7rem;color:var(--text3);font-weight:500;width:58px;text-align:right}
+
+.drag-handle{position:absolute;top:50%;width:22px;height:22px;border-radius:50%;transform:translate(-50%,-50%);cursor:grab;z-index:10;background:radial-gradient(circle,var(--accent) 35%,rgba(108,140,255,0.22));border:2.5px solid var(--bg);box-shadow:0 0 10px rgba(108,140,255,0.35);transition:box-shadow 0.15s}
+.drag-handle:hover{box-shadow:0 0 16px rgba(108,140,255,0.65)}
+.drag-handle.dragging{cursor:grabbing;box-shadow:0 0 22px rgba(108,140,255,0.9);width:26px;height:26px}
+.drag-tip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:0.72rem;font-weight:500;color:var(--accent);background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:0.08rem 0.4rem;white-space:nowrap;pointer-events:none;z-index:11}
+
+.controls-row{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.4rem}
+.ctrl-btn{font-family:var(--font);font-size:0.75rem;font-weight:500;padding:0.28rem 0.6rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.ctrl-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.remove-btn{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.85rem;padding:2px 5px;border-radius:4px;transition:all 0.15s;line-height:1}
+.remove-btn:hover{color:var(--red);background:var(--red-bg)}
+.add-btn{font-family:var(--font);font-size:0.88rem;font-weight:500;padding:0.55rem 1rem;border-radius:var(--radius);border:1px dashed var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all 0.2s;width:100%;margin-top:0.4rem}
+.add-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+
+.cutoff-control{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:1rem;flex-wrap:wrap}
+.cutoff-control label{font-size:0.82rem;color:var(--text2);font-weight:500}
+.cutoff-control input[type="range"]{-webkit-appearance:none;flex:1;max-width:200px;height:5px;background:var(--border);border-radius:2px;outline:none}
+.cutoff-control input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2.5px solid var(--bg)}
+.cutoff-val{font-family:var(--mono);font-size:0.92rem;color:var(--accent);font-weight:500}
+
+.legend{display:flex;flex-wrap:wrap;gap:0.7rem;margin-bottom:0.7rem}
+.legend-item{display:flex;align-items:center;gap:0.3rem;font-size:0.72rem;color:var(--text3)}
+.legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:0.7rem;margin-bottom:0.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;transition:all 0.2s;display:flex;flex-direction:column;min-height:190px}
+.stat-card:hover{border-color:var(--border2);background:var(--surface2)}
+.stat-card.active{border-color:var(--accent);background:var(--accent-bg)}
+.stat-label{font-size:0.82rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.45rem}
+.stat-formula{margin-bottom:0.4rem}
+.stat-calc{margin-bottom:0.4rem;flex:1;overflow-x:auto}
+.calc-line{color:var(--text2);font-size:0.85rem;margin-bottom:0.15rem}
+.stat-value{font-family:var(--mono);font-size:1.5rem;font-weight:500;color:var(--text);margin-top:auto;padding-top:0.25rem}
+.stat-patients{font-size:0.72rem;color:var(--text3);margin-top:0.25rem}
+.stat-patients span{color:var(--accent)}
+
+.katex{font-size:1rem!important}
+.stat-card .katex{font-size:0.92rem!important}
+.calc-line .katex{font-size:0.88rem!important}
+
+.table-2x2{width:auto;min-width:360px;border-collapse:collapse;margin:0.3rem auto;font-size:0.95rem}
+.table-2x2 th,.table-2x2 td{padding:0.5rem 1rem;border-bottom:1px solid var(--border);text-align:center}
+.table-2x2 th{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);border-bottom:2px solid var(--border)}
+.table-2x2 td.lc{text-align:left;font-weight:600}
+.table-2x2 td.m{font-family:var(--mono);font-size:1.05rem}
+.table-2x2 tr:last-child td{border-bottom:2px solid var(--border)}
+.excluded-note{text-align:center;font-size:0.8rem;color:var(--text3);margin-top:0.5rem}
+
+.r-section{margin-bottom:1.8rem}
+.r-section-title{font-family:var(--display);font-size:1.1rem;font-weight:600;color:var(--text2);margin-bottom:0.7rem;display:flex;align-items:center;gap:0.45rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+.r-section-title .dot{width:8px;height:8px;border-radius:50%}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>Interactive Epidemiological Statistics</h1>
+  <p>Drag the glowing circle on each timeline to adjust follow-up day. The drag continues even when your cursor leaves the timeline area. Toggle patient attributes and watch all statistics recalculate.</p>
+</div>
+
+<div class="layout">
+  <div class="panel-left" id="panel-left"></div>
+  <div class="panel-right" id="panel-right"></div>
+</div>
+
+<script>
+// ====== GLOBAL STATE ======
+let nextId=6, cutoffDay=42, maxDay=365, highlightedStat=null;
+let draggingPid=null; // global drag tracking
+let dragTlRect=null;  // cached rect of the timeline being dragged
+const TL=65, TR=12;
+
+let patients=[
+  {id:1,name:'Patient A',followUpDay:30,tbPositive:false,exposed:true,hasFollowUp:true,hasBaselineNeg:true},
+  {id:2,name:'Patient B',followUpDay:60,tbPositive:true,exposed:true,hasFollowUp:true,hasBaselineNeg:false},
+  {id:3,name:'Patient C',followUpDay:60,tbPositive:true,exposed:false,hasFollowUp:true,hasBaselineNeg:false},
+  {id:4,name:'Patient D',followUpDay:0,tbPositive:false,exposed:false,hasFollowUp:false,hasBaselineNeg:false},
+  {id:5,name:'Patient E',followUpDay:30,tbPositive:true,exposed:false,hasFollowUp:true,hasBaselineNeg:true},
+];
+
+// ====== CLASSIFICATION ======
+function classify(p){
+  if(!p.hasFollowUp||p.followUpDay<=0)return'no-followup';
+  if(p.tbPositive&&p.followUpDay<=cutoffDay)return'prevalent';
+  if(p.tbPositive&&p.followUpDay>cutoffDay&&!p.hasBaselineNeg)return'ambiguous';
+  if(p.tbPositive&&p.followUpDay>cutoffDay&&p.hasBaselineNeg)return'incident';
+  if(!p.tbPositive)return'censored';
+  return'no-followup';
+}
+function isIncluded(p){const c=classify(p);return c==='incident'||c==='censored';}
+
+// ====== COMPUTE ======
+function compute(){
+  const inc=patients.filter(isIncluded);
+  const incidents=inc.filter(p=>classify(p)==='incident');
+  const censored=inc.filter(p=>classify(p)==='censored');
+  const prevalent=patients.filter(p=>classify(p)==='prevalent');
+  const ambiguous=patients.filter(p=>classify(p)==='ambiguous');
+  const nofu=patients.filter(p=>classify(p)==='no-followup');
+  const withFU=patients.filter(p=>p.hasFollowUp&&p.followUpDay>0);
+  const pt=inc.reduce((s,p)=>s+p.followUpDay,0);
+  const ci=inc.length>0?incidents.length/inc.length:0;
+  const ir=pt>0?incidents.length/pt:0;
+  const pointPrev=withFU.length>0?prevalent.length/withFU.length:0;
+  const incExp=inc.filter(p=>p.exposed),incUnexp=inc.filter(p=>!p.exposed);
+  const incidentExp=incExp.filter(p=>classify(p)==='incident');
+  const incidentUnexp=incUnexp.filter(p=>classify(p)==='incident');
+  const ciExp=incExp.length>0?incidentExp.length/incExp.length:0;
+  const ciUnexp=incUnexp.length>0?incidentUnexp.length/incUnexp.length:0;
+  const ptExp=incExp.reduce((s,p)=>s+p.followUpDay,0);
+  const ptUnexp=incUnexp.reduce((s,p)=>s+p.followUpDay,0);
+  const irExp=ptExp>0?incidentExp.length/ptExp:0;
+  const irUnexp=ptUnexp>0?incidentUnexp.length/ptUnexp:0;
+  const rr=ciUnexp>0?ciExp/ciUnexp:null;
+  const irr=irUnexp>0?irExp/irUnexp:null;
+  const a=incidentExp.length,b=incExp.length-a,c=incidentUnexp.length,d=incUnexp.length-c;
+  const or_=(b>0&&c>0)?(a*d)/(b*c):null;
+  const rd=ciExp-ciUnexp;
+  const afe=rr!==null&&rr>0?(rr-1)/rr:null;
+  const pe=inc.length>0?incExp.length/inc.length:0;
+  const paf=rr!==null&&(1+pe*(rr-1))!==0?(pe*(rr-1))/(1+pe*(rr-1)):null;
+  const nnt=rd!==0?1/Math.abs(rd):null;
+  const hr=irUnexp>0?irExp/irUnexp:null;
+  const avgD=incidents.length>0?incidents.reduce((s,p)=>s+p.followUpDay,0)/incidents.length:0;
+  const pApprox=ir*avgD;
+  return{inc,incidents,censored,prevalent,ambiguous,nofu,withFU,pt,ci,ir,pointPrev,ciExp,ciUnexp,irExp,irUnexp,ptExp,ptUnexp,incExp,incUnexp,incidentExp,incidentUnexp,rr,irr,or:or_,rd,afe,paf,nnt,hr,a,b,c,d,pe,avgD,pApprox};
+}
+
+// ====== HELPERS ======
+function rk(t){try{return katex.renderToString(t,{throwOnError:false})}catch(e){return t}}
+function fmt(n,d=4){if(n==null||isNaN(n)||!isFinite(n))return'—';return n.toFixed(d)}
+function fP(n){if(n==null||isNaN(n)||!isFinite(n))return'—';return(n*100).toFixed(2)+'\\%'}
+function fPv(n){if(n==null||isNaN(n)||!isFinite(n))return'—';return(n*100).toFixed(2)+'%'}
+function tagClass(p){return{incident:'tag-incident',prevalent:'tag-prevalent',censored:'tag-censored',ambiguous:'tag-ambiguous'}[classify(p)]||'tag-excluded'}
+function tagText(p){return{incident:'Incident',prevalent:'Prevalent',censored:'Censored',ambiguous:'Ambiguous','no-followup':'No F/U'}[classify(p)]||'Excluded'}
+function hlIdsFor(key,S){
+  const m={pointPrev:S.withFU,ci:S.inc,ir:S.inc,ciExp:S.incExp,ciUnexp:S.incUnexp,irExp:S.incExp,irUnexp:S.incUnexp};
+  return(m[key]||S.inc).map(p=>p.id);
+}
+function bN(pats,fn){return pats.map(p=>fn(p)?'\\textcolor{3ddc84}{1}':'\\textcolor{5c6078}{0}').join('+')}
+function bD(pats,fn){return pats.map(p=>'\\textcolor{9498aa}{'+fn(p)+'}').join('+')}
+
+// ====== TIMELINE POSITION HELPER ======
+function tlLeft(day){return`calc(${TL}px + (100% - ${TL+TR}px) * ${day/maxDay})`;}
+function tlWidth(d1,d2){return`calc((100% - ${TL+TR}px) * ${(d2-d1)/maxDay})`;}
+
+// ====== GLOBAL DRAG HANDLER (document-level, never destroyed) ======
+function globalDragMove(ev){
+  if(draggingPid===null)return;
+  ev.preventDefault();
+  const cx=ev.touches?ev.touches[0].clientX:ev.clientX;
+  if(!dragTlRect)return;
+  const rel=cx-dragTlRect.left-TL;
+  const w=dragTlRect.width-TL-TR;
+  const ratio=Math.max(0,Math.min(1,rel/w));
+  const day=Math.max(1,Math.round(ratio*maxDay));
+  const p=patients.find(x=>x.id===draggingPid);
+  if(!p)return;
+  p.followUpDay=day;
+
+  // FAST UPDATE: only update the visual elements for this patient + stats
+  updatePatientVisual(p);
+  updateStats();
+}
+
+function globalDragEnd(){
+  if(draggingPid===null)return;
+  draggingPid=null;
+  dragTlRect=null;
+  document.body.classList.remove('dragging-active');
+  // Full re-render to sync everything cleanly
+  render();
+}
+
+// Attach once, globally
+document.addEventListener('mousemove',globalDragMove);
+document.addEventListener('mouseup',globalDragEnd);
+document.addEventListener('touchmove',globalDragMove,{passive:false});
+document.addEventListener('touchend',globalDragEnd);
+
+// ====== FAST VISUAL UPDATE (no DOM rebuild) ======
+function updatePatientVisual(p){
+  const card=document.querySelector(`[data-pid="${p.id}"]`);
+  if(!card)return;
+  const c=classify(p);
+  const excl=!isIncluded(p);
+
+  // Update tags
+  const tagEl=card.querySelector('.class-tag');
+  if(tagEl){tagEl.className='patient-tag '+tagClass(p);tagEl.textContent=tagText(p);}
+
+  // Update opacity
+  card.classList.toggle('excluded',excl);
+
+  // Update timeline elements
+  const seg=card.querySelector('.tl-seg-main');
+  const segDash=card.querySelector('.tl-seg-dash');
+  const endDot=card.querySelector('.tl-end-dot');
+  const endLabel=card.querySelector('.tl-end-label');
+  const handle=card.querySelector('.drag-handle');
+  const tip=card.querySelector('.drag-tip');
+
+  const r=p.followUpDay/maxDay;
+  const leftPos=tlLeft(p.followUpDay);
+  const segWidth=tlWidth(0,p.followUpDay);
+  const dashWidth=tlWidth(p.followUpDay,maxDay);
+
+  if(seg){
+    seg.style.width=segWidth;
+    seg.className='tl-seg tl-seg-main '+(c==='incident'?'green':c==='prevalent'?'red':c==='ambiguous'?'orange':'amber');
+  }
+  if(segDash){
+    segDash.style.left=leftPos;
+    segDash.style.width=r<0.97?dashWidth:'0';
+  }
+  if(endDot){
+    endDot.style.left=leftPos;
+    const dc=p.tbPositive?(c==='incident'?'var(--green)':c==='ambiguous'?'var(--orange)':'var(--red)'):'var(--amber)';
+    endDot.style.background=dc;endDot.style.borderColor=dc;
+  }
+  if(endLabel){
+    endLabel.style.left=leftPos;
+    endLabel.textContent=(p.tbPositive?'TB+':'TB−')+' d'+p.followUpDay;
+  }
+  if(handle)handle.style.left=leftPos;
+  if(tip)tip.textContent='Day '+p.followUpDay;
+}
+
+function updateStats(){
+  const S=compute();
+  // Update right panel entirely (KaTeX needs re-render for formulas)
+  renderRightPanel(S);
+}
+
+// ====== RENDER ======
+function render(){
+  const S=compute();
+  const hIds=highlightedStat?hlIdsFor(highlightedStat,S):[];
+
+  renderLeftPanel(S,hIds);
+  renderRightPanel(S);
+  bindLeftEvents();
+}
+
+function renderLeftPanel(S,hIds){
+  let html=`
+    <div class="cutoff-control">
+      <label>Cutoff:</label>
+      <input type="range" min="7" max="180" value="${cutoffDay}" id="cutoff-slider"/>
+      <span class="cutoff-val">${cutoffDay} days</span>
+    </div>
+    <div class="section">
+      <div class="section-title"><div class="dot" style="background:var(--accent);"></div>Patient Timelines</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--green);"></div>Incident</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--red);"></div>Prevalent</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--orange);"></div>Ambiguous</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--amber);"></div>Censored</div>
+        <div class="legend-item"><div style="width:0;height:12px;border-left:2px dashed var(--accent);opacity:0.5;"></div>Cutoff</div>
+      </div>
+      <div class="patients-grid">`;
+
+  patients.forEach(p=>{
+    const c=classify(p),excl=!isIncluded(p),hl=hIds.includes(p.id);
+    const cutPx=tlLeft(cutoffDay);
+    const isDragging=draggingPid===p.id;
+
+    let segs='',dots='',labels='';
+    dots+=`<div class="tl-dot" style="left:${TL}px;background:var(--accent);border-color:var(--accent);"></div>`;
+
+    if(p.hasFollowUp&&p.followUpDay>0){
+      const leftPos=tlLeft(p.followUpDay);
+      const segW=tlWidth(0,p.followUpDay);
+      const dashW=tlWidth(p.followUpDay,maxDay);
+      const segC=c==='incident'?'green':c==='prevalent'?'red':c==='ambiguous'?'orange':'amber';
+      segs+=`<div class="tl-seg tl-seg-main ${segC}" style="left:${TL}px;width:${segW};"></div>`;
+      if(p.followUpDay<maxDay*0.97)segs+=`<div class="tl-seg dashed tl-seg-dash" style="left:${leftPos};width:${dashW};"></div>`;
+      else segs+=`<div class="tl-seg dashed tl-seg-dash" style="left:${leftPos};width:0;"></div>`;
+
+      const dc=p.tbPositive?(c==='incident'?'var(--green)':c==='ambiguous'?'var(--orange)':'var(--red)'):'var(--amber)';
+      dots+=`<div class="tl-dot tl-end-dot" style="left:${leftPos};background:${dc};border-color:${dc};"></div>`;
+      labels+=`<div class="tl-label tl-end-label" style="left:${leftPos};top:-3px;">${p.tbPositive?'TB+':'TB−'} d${p.followUpDay}</div>`;
+    }else{
+      segs+=`<div class="tl-seg dashed" style="left:${TL}px;width:calc(100% - ${TL+TR}px);"></div>`;
+      labels+=`<div class="tl-label" style="left:50%;top:50%;transform:translate(-50%,-50%);color:var(--text3);font-style:italic;">No follow-up</div>`;
+    }
+
+    const handleLeft=p.hasFollowUp&&p.followUpDay>0?tlLeft(p.followUpDay):'50%';
+
+    html+=`<div class="patient-card ${excl?'excluded':''} ${hl?'highlighted':''}" data-pid="${p.id}">
+      ${patients.length>1?`<button class="remove-btn" data-action="remove" data-id="${p.id}">✕</button>`:''}
+      <div class="patient-top">
+        <div class="patient-name">${p.name}</div>
+        <div class="tags-row">
+          <span class="patient-tag class-tag ${tagClass(p)}">${tagText(p)}</span>
+          <span class="patient-tag ${p.exposed?'tag-exposed':'tag-unexposed'}">${p.exposed?'Exposed':'Unexposed'}</span>
+          ${p.hasBaselineNeg&&p.hasFollowUp?'<span class="patient-tag tag-baseline">Baseline TB−</span>':''}
+        </div>
+      </div>
+      <div class="timeline-row" data-tl="${p.id}">
+        <div class="tl-day0">Day 0</div><div class="tl-bg"></div>
+        <div class="tl-cutoff" style="left:${cutPx};"></div>
+        <div class="tl-cutoff-tag" style="left:${cutPx};">${cutoffDay}d</div>
+        ${segs}${dots}${labels}
+        ${p.hasFollowUp?`<div class="drag-handle ${isDragging?'dragging':''}" data-drag="${p.id}" style="left:${handleLeft};"><div class="drag-tip">Day ${p.followUpDay}</div></div>`:''}
+      </div>
+      <div class="controls-row">
+        <button class="ctrl-btn ${p.tbPositive?'active':''}" data-action="toggle-tb" data-id="${p.id}">TB ${p.tbPositive?'+':'−'}</button>
+        <button class="ctrl-btn ${p.exposed?'active':''}" data-action="toggle-exposed" data-id="${p.id}">${p.exposed?'Exp':'Unexp'}</button>
+        <button class="ctrl-btn" data-action="toggle-followup" data-id="${p.id}">${p.hasFollowUp?'F/U':'No F/U'}</button>
+        <button class="ctrl-btn ${p.hasBaselineNeg?'active':''}" data-action="toggle-baseline" data-id="${p.id}">${p.hasBaselineNeg?'BL TB−':'No BL'}</button>
+      </div>
+    </div>`;
+  });
+
+  html+=`</div><button class="add-btn" id="add-btn">+ Add Patient</button></div>`;
+  document.getElementById('panel-left').innerHTML=html;
+}
+
+function renderRightPanel(S){
+  function sc(key,label,formulaTex,calcTex,value){
+    const isA=highlightedStat===key;
+    const ids=hlIdsFor(key,S);
+    const names=patients.filter(p=>ids.includes(p.id)).map(p=>p.name).join(', ');
+    return`<div class="stat-card ${isA?'active':''}" data-stat="${key}">
+      <div class="stat-label">${label}</div>
+      <div class="stat-formula">${rk(formulaTex)}</div>
+      <div class="stat-calc"><div class="calc-line">${rk(calcTex)}</div></div>
+      <div class="stat-value">${value}</div>
+      <div class="stat-patients">Patients: <span>${names||'none'}</span></div>
+    </div>`;
+  }
+
+  const prevCalc=`\\frac{${bN(S.withFU,p=>classify(p)==='prevalent')}}{${bD(S.withFU,()=>1)}} = \\frac{${S.prevalent.length}}{${S.withFU.length}} = ${fP(S.pointPrev)}`;
+  const ciCalc=`\\frac{${bN(S.inc,p=>classify(p)==='incident')}}{${bD(S.inc,()=>1)}} = \\frac{${S.incidents.length}}{${S.inc.length}} = ${fP(S.ci)}`;
+  const irCalc=`\\frac{${bN(S.inc,p=>classify(p)==='incident')}}{${bD(S.inc,p=>p.followUpDay)}} = \\frac{${S.incidents.length}}{${S.pt}}`;
+  const ciExpCalc=S.incExp.length>0?`\\frac{${bN(S.incExp,p=>classify(p)==='incident')}}{${bD(S.incExp,()=>1)}} = \\frac{${S.incidentExp.length}}{${S.incExp.length}} = ${fP(S.ciExp)}`:`\\text{No exposed included}`;
+  const ciUnexpCalc=S.incUnexp.length>0?`\\frac{${bN(S.incUnexp,p=>classify(p)==='incident')}}{${bD(S.incUnexp,()=>1)}} = \\frac{${S.incidentUnexp.length}}{${S.incUnexp.length}} = ${fP(S.ciUnexp)}`:`\\text{No unexposed included}`;
+  const irExpCalc=S.incExp.length>0?`\\frac{${S.incidentExp.length}}{${bD(S.incExp,p=>p.followUpDay)}} = \\frac{${S.incidentExp.length}}{${S.ptExp}}`:`\\text{—}`;
+  const irUnexpCalc=S.incUnexp.length>0?`\\frac{${S.incidentUnexp.length}}{${bD(S.incUnexp,p=>p.followUpDay)}} = \\frac{${S.incidentUnexp.length}}{${S.ptUnexp}}`:`\\text{—}`;
+  const rrCalc=`\\frac{${fP(S.ciExp)}}{${fP(S.ciUnexp)}}`;
+  const irrCalc=`\\frac{${fmt(S.irExp,6)}}{${fmt(S.irUnexp,6)}}`;
+  const orCalc=`\\frac{${S.a} \\times ${S.d}}{${S.b} \\times ${S.c}} = \\frac{${S.a*S.d}}{${S.b*S.c}}`;
+  const rdCalc=`${fP(S.ciExp)} - ${fP(S.ciUnexp)}`;
+  const afeCalc=S.rr!=null?`\\frac{${fmt(S.rr,4)} - 1}{${fmt(S.rr,4)}}`:`\\text{—}`;
+  const pafCalc=`p_e = ${fP(S.pe)},\\; \\text{RR} = ${fmt(S.rr,4)}`;
+  const nntCalc=`\\frac{1}{|${fP(S.rd)}|}`;
+
+  document.getElementById('panel-right').innerHTML=`
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--purple);"></div>2×2 Contingency Table</div>
+      <div style="overflow-x:auto;"><table class="table-2x2">
+        <thead><tr><th></th><th style="color:var(--green);">TB+ (Incident)</th><th style="color:var(--text2);">TB− (Censored)</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td class="lc" style="color:var(--purple);">Exposed</td><td class="m">${S.a}</td><td class="m">${S.b}</td><td class="m" style="color:var(--text2);">${S.a+S.b}</td></tr>
+          <tr><td class="lc" style="color:var(--cyan);">Unexposed</td><td class="m">${S.c}</td><td class="m">${S.d}</td><td class="m" style="color:var(--text2);">${S.c+S.d}</td></tr>
+          <tr><td class="lc" style="color:var(--text3);">Total</td><td class="m" style="color:var(--text2);">${S.a+S.c}</td><td class="m" style="color:var(--text2);">${S.b+S.d}</td><td class="m" style="color:var(--accent);font-weight:700;">${S.inc.length}</td></tr>
+        </tbody></table></div>
+      <p class="excluded-note">Excluded: ${S.prevalent.length} prevalent + ${S.ambiguous.length} ambiguous + ${S.nofu.length} no F/U = <strong style="color:var(--red);">${S.prevalent.length+S.ambiguous.length+S.nofu.length}</strong></p>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--red);"></div>Prevalence</div>
+      <div class="stats-grid">${sc('pointPrev','Point Prevalence','\\frac{\\text{Prevalent cases}}{\\text{All with follow-up}}',prevCalc,fPv(S.pointPrev))}</div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--green);"></div>Incidence</div>
+      <div class="stats-grid">
+        ${sc('ci','Cumulative Incidence (Risk)','\\frac{\\text{Incident cases}}{\\text{At-risk (included)}}',ciCalc,fPv(S.ci))}
+        ${sc('ir','Incidence Rate (Person-Time)','\\frac{\\text{Incident cases}}{\\sum \\text{person-time}_i}',irCalc,fmt(S.ir,6)+' /person-day')}
+      </div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--purple);"></div>Stratum-Specific Incidence</div>
+      <div class="stats-grid">
+        ${sc('ciExp','CI (Exposed)','\\frac{\\text{Incident}_{exp}}{n_{exp}}',ciExpCalc,fPv(S.ciExp))}
+        ${sc('ciUnexp','CI (Unexposed)','\\frac{\\text{Incident}_{unexp}}{n_{unexp}}',ciUnexpCalc,fPv(S.ciUnexp))}
+        ${sc('irExp','IR (Exposed)','\\frac{\\text{Incident}_{exp}}{\\text{PT}_{exp}}',irExpCalc,fmt(S.irExp,6)+' /pd')}
+        ${sc('irUnexp','IR (Unexposed)','\\frac{\\text{Incident}_{unexp}}{\\text{PT}_{unexp}}',irUnexpCalc,fmt(S.irUnexp,6)+' /pd')}
+      </div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--cyan);"></div>Measures of Association</div>
+      <div class="stats-grid">
+        ${sc('rr','Risk Ratio (RR)','\\frac{\\text{CI}_{exp}}{\\text{CI}_{unexp}}',rrCalc,fmt(S.rr,4))}
+        ${sc('irr','Rate Ratio (IRR)','\\frac{\\text{IR}_{exp}}{\\text{IR}_{unexp}}',irrCalc,fmt(S.irr,4))}
+        ${sc('or','Odds Ratio (OR)','\\frac{a \\times d}{b \\times c}',orCalc,fmt(S.or,4))}
+        ${sc('hr','Hazard Ratio (≈ IRR)','\\frac{h_{exp}(t)}{h_{unexp}(t)} \\approx \\text{IRR}',irrCalc,fmt(S.hr,4))}
+      </div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--amber);"></div>Measures of Impact</div>
+      <div class="stats-grid">
+        ${sc('rd','Risk Difference (RD)','\\text{CI}_{exp} - \\text{CI}_{unexp}',rdCalc,fPv(S.rd))}
+        ${sc('afe','Attributable Fraction (AFe)','\\frac{\\text{RR} - 1}{\\text{RR}}',afeCalc,fmt(S.afe,4))}
+        ${sc('paf','Population AF (PAF)','\\frac{p_e(\\text{RR}-1)}{1+p_e(\\text{RR}-1)}',pafCalc,fmt(S.paf,4))}
+        ${sc('nnt','NNT / NNH','\\frac{1}{|\\text{RD}|}',nntCalc,S.nnt!=null?fmt(S.nnt,1)+(S.rd>0?' (NNH)':S.rd<0?' (NNT)':''):'—')}
+      </div>
+    </div>
+
+    <div class="r-section">
+      <div class="r-section-title"><div class="dot" style="background:var(--text3);"></div>Prevalence–Incidence Relationship</div>
+      <div class="stats-grid">
+        ${sc('pird','P ≈ IR × D','P \\approx \\text{IR} \\times \\bar{D}',`${fmt(S.ir,6)} \\times ${fmt(S.avgD,1)} = ${fmt(S.pApprox,6)}`,fmt(S.pApprox,6))}
+      </div>
+    </div>
+  `;
+
+  // Rebind stat hover events
+  document.querySelectorAll('[data-stat]').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{highlightedStat=el.dataset.stat;render()});
+    el.addEventListener('mouseleave',()=>{highlightedStat=null;render()});
+  });
+}
+
+function bindLeftEvents(){
+  document.getElementById('cutoff-slider').addEventListener('input',e=>{cutoffDay=parseInt(e.target.value);render()});
+  document.getElementById('add-btn').addEventListener('click',()=>{
+    patients.push({id:nextId++,name:'Patient '+String.fromCharCode(64+patients.length+1),followUpDay:90,tbPositive:false,exposed:Math.random()>0.5,hasFollowUp:true,hasBaselineNeg:Math.random()>0.5});
+    render();
+  });
+  document.querySelectorAll('[data-action]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=parseInt(el.dataset.id),act=el.dataset.action;
+      const p=patients.find(x=>x.id===id);if(!p)return;
+      if(act==='toggle-tb')p.tbPositive=!p.tbPositive;
+      if(act==='toggle-exposed')p.exposed=!p.exposed;
+      if(act==='toggle-followup'){p.hasFollowUp=!p.hasFollowUp;if(!p.hasFollowUp)p.followUpDay=0;else p.followUpDay=60;}
+      if(act==='toggle-baseline')p.hasBaselineNeg=!p.hasBaselineNeg;
+      if(act==='remove')patients=patients.filter(x=>x.id!==id);
+      render();
+    });
+  });
+
+  // Drag initiation (only mousedown/touchstart on handles)
+  document.querySelectorAll('.drag-handle').forEach(h=>{
+    h.addEventListener('mousedown',initDrag);
+    h.addEventListener('touchstart',initDrag,{passive:false});
+  });
+}
+
+function initDrag(e){
+  e.preventDefault();
+  e.stopPropagation();
+  const pid=parseInt(e.currentTarget.dataset.drag);
+  draggingPid=pid;
+  document.body.classList.add('dragging-active');
+
+  // Cache the timeline rect so we don't need to query during drag
+  const tlEl=document.querySelector(`[data-tl="${pid}"]`);
+  if(tlEl) dragTlRect=tlEl.getBoundingClientRect();
+
+  // Mark handle as dragging
+  e.currentTarget.classList.add('dragging');
+}
+
+// ====== INIT ======
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "epi-interactive-stats",
+  "version": "1.0.0",
+  "description": "Interactive epidemiological statistics calculator with patient timelines, prevalence/incidence formulas, and real-time calculation breakdowns.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve public",
+    "build": "echo 'Static site — no build step needed.'"
+  }
+}
