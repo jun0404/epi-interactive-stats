@@ -522,7 +522,7 @@ function renderRightPanel(S){
     <div class="r-section">
       <div class="r-section-title"><div class="dot" style="background:var(--text3);"></div>Prevalence–Incidence Relationship</div>
       <div class="stats-grid">
-        ${sc('pird','P ≈ IR × D','P \\approx \\text{IR} \\times \\bar{D}',`${fmt(S.ir,6)} \\times ${fmt(S.avgD,1)} = ${fmt(S.pApprox,6)}`,fmt(S.pApprox,6))}
+        ${sc('pird','Steady-State Approximation','P \\approx \\text{IR} \\times \\bar{D}',`${fmt(S.ir,6)} \\times ${fmt(S.avgD,1)} = ${fmt(S.pApprox,6)}`,fmt(S.pApprox,6))}
       </div>
     </div>
   `;
