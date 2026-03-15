@@ -34,12 +34,12 @@ body.dragging-active *{cursor:grabbing!important}
 .app-header h1{font-family:var(--display);font-size:2rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
 .app-header p{font-size:0.9rem;color:var(--text3);max-width:760px;margin:0 auto}
 
-.layout{display:flex;flex-direction:row;max-width:1800px;margin:0 auto;min-height:calc(100vh - 120px)}
+.layout{display:flex;flex-direction:row;max-width:1800px;margin:0 auto}
 
 .panel-left{
   width:50%;max-width:700px;min-width:420px;
   border-right:1px solid var(--border);
-  padding:1.2rem 1.4rem 2rem;
+  padding:1.2rem 1.4rem 0.5rem;
   overflow-y:auto;height:calc(100vh - 120px);
   position:sticky;top:0;flex-shrink:0;
 }
@@ -49,7 +49,7 @@ body.dragging-active *{cursor:grabbing!important}
 
 .panel-right{
   flex:1;min-width:0;
-  padding:0.8rem 1rem 2rem;
+  padding:0.8rem 1rem 0.5rem;
   overflow-y:auto;height:calc(100vh - 120px);
 }
 .panel-right::-webkit-scrollbar{width:5px}
@@ -58,16 +58,17 @@ body.dragging-active *{cursor:grabbing!important}
 
 @media(max-width:1100px){
   .layout{flex-direction:column}
-  .panel-left{width:100%;max-width:none;min-width:0;border-right:none;border-bottom:1px solid var(--border);height:auto;position:static;overflow-y:visible;padding-bottom:1.5rem}
-  .panel-right{height:auto;overflow-y:visible}
+  .panel-left{width:100%;max-width:none;min-width:0;border-right:none;border-bottom:1px solid var(--border);height:auto;position:static;overflow-y:visible;padding-bottom:0.5rem}
+  .panel-right{height:auto;overflow-y:visible;padding-bottom:0.5rem}
 }
 @media(max-width:520px){
-  .panel-left,.panel-right{padding:0.8rem 0.8rem 1.5rem}
+  .panel-left,.panel-right{padding:0.8rem 0.8rem 0.5rem}
   .app-header{padding:1.2rem 0.8rem 1rem}
   .app-header h1{font-size:1.5rem}
 }
 
-.section{margin-bottom:2rem}
+.section{margin-bottom:1rem}
+.section:last-child{margin-bottom:0}
 .section-title{font-family:var(--display);font-size:1.15rem;font-weight:600;color:var(--text2);margin-bottom:0.8rem;display:flex;align-items:center;gap:0.5rem}
 .section-title .dot{width:9px;height:9px;border-radius:50%}
 
@@ -158,6 +159,7 @@ body.dragging-active *{cursor:grabbing!important}
 .excluded-note{text-align:center;font-size:0.95rem;color:var(--text3);margin-top:0.3rem}
 
 .r-section{margin-bottom:1rem}
+.r-section:last-child{margin-bottom:0}
 .r-section-title{font-family:var(--display);font-size:1.3rem;font-weight:600;color:var(--text2);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border)}
 .r-section-title .dot{width:10px;height:10px;border-radius:50%}
 </style>
