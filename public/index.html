@@ -134,20 +134,20 @@ body.dragging-active *{cursor:grabbing!important}
 .legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:0.7rem;margin-bottom:0.5rem}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;transition:all 0.2s;display:flex;flex-direction:column;min-height:190px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;transition:all 0.2s;display:flex;flex-direction:column;min-height:220px}
 .stat-card:hover{border-color:var(--border2);background:var(--surface2)}
 .stat-card.active{border-color:var(--accent);background:var(--accent-bg)}
-.stat-label{font-size:0.82rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.45rem}
-.stat-formula{margin-bottom:0.4rem}
-.stat-calc{margin-bottom:0.4rem;flex:1;overflow-x:auto}
-.calc-line{color:var(--text2);font-size:0.85rem;margin-bottom:0.15rem}
+.stat-label{font-size:0.85rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem}
+.stat-formula{margin-bottom:0.55rem}
+.stat-calc{margin-bottom:0.5rem;flex:1;overflow-x:auto}
+.calc-line{color:var(--text2);font-size:0.92rem;margin-bottom:0.2rem}
 .stat-value{font-family:var(--mono);font-size:1.5rem;font-weight:500;color:var(--text);margin-top:auto;padding-top:0.25rem}
 .stat-patients{font-size:0.72rem;color:var(--text3);margin-top:0.25rem}
 .stat-patients span{color:var(--accent)}
 
-.katex{font-size:1rem!important}
-.stat-card .katex{font-size:0.92rem!important}
-.calc-line .katex{font-size:0.88rem!important}
+.katex{font-size:1.15rem!important}
+.stat-card .stat-formula .katex{font-size:1.15rem!important}
+.calc-line .katex{font-size:1.05rem!important}
 
 .table-2x2{width:auto;min-width:360px;border-collapse:collapse;margin:0.3rem auto;font-size:0.95rem}
 .table-2x2 th,.table-2x2 td{padding:0.5rem 1rem;border-bottom:1px solid var(--border);text-align:center}
