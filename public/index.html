@@ -585,7 +585,7 @@ function bindLeftEvents(){
       const p=patients.find(x=>x.id===id);if(!p)return;
       if(act==='toggle-tb')p.tbPositive=!p.tbPositive;
       if(act==='toggle-exposed')p.exposed=!p.exposed;
-      if(act==='toggle-followup'){p.hasFollowUp=!p.hasFollowUp;if(!p.hasFollowUp)p.followUpDay=0;else p.followUpDay=60;}
+      if(act==='toggle-followup'){p.hasFollowUp=!p.hasFollowUp;if(!p.hasFollowUp){p._lastDay=p.followUpDay;p.followUpDay=0;}else{p.followUpDay=p._lastDay||60;}}
       if(act==='toggle-baseline')p.hasBaselineNeg=!p.hasBaselineNeg;
       if(act==='remove')patients=patients.filter(x=>x.id!==id);
       render();
